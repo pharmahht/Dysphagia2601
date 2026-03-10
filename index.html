@@ -1,0 +1,1582 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pharmacist Clinical Training Simulator - Dysphagia Case</title>
+  <style>
+    :root{
+      --bg:#0f172a;
+      --panel:#1e293b;
+      --line:#334155;
+      --text:#e5eefb;
+      --muted:#94a3b8;
+      --teal:#0d9488;
+      --teal2:#14b8a6;
+      --shadow:0 10px 30px rgba(0,0,0,.25);
+      --r:18px;
+      --redbg:rgba(127,29,29,.28);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:Inter,Segoe UI,Arial,sans-serif;
+    }
+    .page{max-width:1440px;margin:0 auto;padding:20px}
+    .header{
+      background:linear-gradient(90deg,#115e59,#164e63);
+      border-radius:22px;
+      padding:20px 24px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+    .header-top{
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:14px;
+    }
+    .title-wrap{display:flex;gap:14px}
+    .logo{
+      width:48px;height:48px;border-radius:14px;
+      background:rgba(255,255,255,.14);
+      display:grid;place-items:center;font-size:24px
+    }
+    h1{margin:0;font-size:24px}
+    .subtitle{margin-top:4px;color:#c7f9f3;font-size:14px}
+    .subline{margin-top:4px;color:#cbd5e1;font-size:12px}
+    .progress{
+      background:rgba(255,255,255,.12);
+      padding:10px 14px;
+      border-radius:14px;
+      min-width:170px;
+    }
+    .progress .label{font-size:12px;color:#cbd5e1}
+    .progress .value{font-size:18px;font-weight:700;margin-top:4px}
+    .case-bg{
+      background:rgba(2,6,23,.45);
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:18px;
+      padding:16px 18px;
+      line-height:1.65;
+      font-size:14px;
+    }
+    .case-bg strong{color:#67e8f9}
+
+    .main{
+      display:grid;
+      grid-template-columns:minmax(320px,1fr) minmax(560px,2fr);
+      gap:18px;
+      align-items:start;
+    }
+    .left-col,.right-col{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .right-col{position:sticky;top:18px}
+
+    .card,.dialogue-box,.scene2-panel,.quiz-box,.extension-panel,.license{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--r);
+      box-shadow:var(--shadow);
+    }
+
+    .card-pad,.dialogue-box,.scene2-panel,.quiz-box,.extension-panel,.license{
+      padding:18px;
+    }
+
+    .patient-head{
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      margin-bottom:14px;
+    }
+    .avatar-round{
+      width:54px;height:54px;border-radius:50%;
+      display:grid;place-items:center;
+      font-size:28px;
+      background:linear-gradient(135deg,#fbbf24,#f97316);
+    }
+    .small{font-size:13px;color:var(--muted)}
+    .summary-box{
+      background:rgba(51,65,85,.45);
+      border-radius:14px;
+      padding:12px;
+      line-height:1.5;
+      font-size:14px;
+    }
+    .summary-box .k{color:#94a3b8}
+
+    details.card summary{
+      list-style:none;
+      cursor:pointer;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:14px 16px;
+      font-weight:600;
+    }
+    details.card summary::-webkit-details-marker{display:none}
+    .detail-content{padding:0 16px 16px}
+    .section-title{color:#67e8f9;font-weight:600;margin:0 0 8px}
+    .text-block{font-size:14px;line-height:1.6;color:#dbe7f5}
+    .text-block p{margin:0 0 10px}
+
+    .mini-cards{
+      display:grid;
+      gap:10px;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+    .mini-card{
+      background:rgba(51,65,85,.45);
+      border-radius:12px;
+      padding:10px;
+      text-align:center;
+    }
+    .mini-card .k{font-size:12px;color:var(--muted)}
+    .mini-card .v{font-size:18px;font-weight:700;color:#34d399;margin-top:4px}
+
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{
+      border:1px solid #475569;
+      padding:8px 9px;
+      vertical-align:top;
+      text-align:left;
+    }
+    th{background:rgba(51,65,85,.65)}
+    .abn{
+      color:#fecaca;
+      background:var(--redbg);
+      font-weight:600;
+    }
+
+    .sim-grid{
+      display:grid;
+      grid-template-columns:1fr 260px;
+      gap:14px;
+    }
+
+    .sim-stage{
+      min-height:360px;
+      position:relative;
+      overflow:hidden;
+      background:linear-gradient(180deg,#334155,#1f2937);
+      border-radius:22px;
+      border:1px solid #475569;
+      padding:18px;
+    }
+
+    .stats h3{margin:0 0 12px;font-size:16px}
+    .stats-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .stat-box{
+      background:rgba(51,65,85,.45);
+      border-radius:12px;
+      padding:12px;
+    }
+    .stat-box .k{font-size:12px;color:var(--muted)}
+    .stat-box .v{font-size:20px;font-weight:700;margin-top:6px}
+
+    .window{
+      position:absolute;
+      left:18px;top:18px;
+      width:130px;height:88px;
+      border-radius:12px;
+      background:linear-gradient(180deg,#93c5fd,#38bdf8);
+      border:5px solid rgba(100,116,139,.8);
+      opacity:.75;
+    }
+
+    .desk{
+      position:absolute;
+      left:50%;
+      bottom:70px;
+      transform:translateX(-50%);
+      width:310px;
+    }
+    .desk-top{height:16px;background:#64748b;border-radius:10px 10px 0 0}
+    .desk-mid{
+      height:90px;background:#fff;border-radius:0 0 12px 12px;position:relative
+    }
+    .desk-icon{position:absolute;left:18px;top:12px;font-size:42px}
+    .desk-cloth{
+      position:absolute;right:0;bottom:0;
+      width:210px;height:58px;
+      background:linear-gradient(90deg,#99f6e4,#5eead4);
+      border-radius:28px 0 12px 0;
+    }
+    .desk-legs{display:flex;justify-content:space-between;padding:0 24px}
+    .desk-legs span{
+      width:12px;height:28px;background:#475569;border-radius:0 0 6px 6px;display:block
+    }
+
+    .monitor-btn{
+      position:absolute;
+      right:18px;top:18px;
+      width:126px;
+      background:#0f172a;
+      border:2px solid #475569;
+      border-radius:14px;
+      padding:10px;
+      color:#34d399;
+      cursor:pointer;
+    }
+    .monitor-btn .txt{margin-top:8px;font-size:12px;text-align:center}
+
+    .character{
+      position:absolute;
+      bottom:18px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      cursor:pointer;
+      user-select:none;
+    }
+    .char-left{left:18px;animation:floatChar 2.8s ease-in-out infinite}
+    .char-center{left:50%;transform:translateX(-50%);animation:floatCenter 2.8s ease-in-out infinite .4s}
+    .char-right{right:18px;animation:floatChar 2.8s ease-in-out infinite .8s}
+
+    .char-icon{
+      width:68px;height:68px;border-radius:50%;
+      display:grid;place-items:center;
+      font-size:34px;
+      border:4px solid #fff;
+      box-shadow:var(--shadow);
+      animation:pulseGlow 2.5s ease-in-out infinite;
+    }
+    .physician{background:linear-gradient(135deg,#60a5fa,#2563eb)}
+    .pharmacist{background:linear-gradient(135deg,#34d399,#14b8a6)}
+    .caregiver{background:linear-gradient(135deg,#c084fc,#9333ea)}
+
+    .char-label{
+      margin-top:8px;
+      padding:5px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:600;
+      color:#fff;
+      background:#334155;
+    }
+    .char-note{font-size:11px;color:#cbd5e1;margin-top:5px}
+
+    @keyframes floatChar{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-8px)}
+    }
+    @keyframes floatCenter{
+      0%,100%{transform:translateX(-50%) translateY(0)}
+      50%{transform:translateX(-50%) translateY(-8px)}
+    }
+    @keyframes pulseGlow{
+      0%,100%{box-shadow:var(--shadow)}
+      50%{box-shadow:0 0 0 6px rgba(255,255,255,.08),0 10px 30px rgba(0,0,0,.25)}
+    }
+
+    .floating-tip{
+      position:absolute;
+      left:50%;top:16px;
+      transform:translateX(-50%);
+      background:rgba(15,23,42,.92);
+      border:1px solid rgba(45,212,191,.45);
+      border-radius:14px;
+      padding:10px 14px;
+      font-size:13px;
+      color:#5eead4;
+    }
+
+    .hidden{display:none!important}
+
+    .speaker-row{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-bottom:14px;
+    }
+    .speaker-avatar{
+      width:48px;height:48px;border-radius:50%;
+      display:grid;place-items:center;
+      font-size:24px;
+    }
+    .speaker-name{font-weight:700}
+    .speaker-role{font-size:13px;color:var(--muted)}
+
+    .question-box{
+      background:rgba(51,65,85,.45);
+      border-radius:14px;
+      padding:14px;
+      margin-bottom:14px;
+      white-space:pre-line;
+      line-height:1.6;
+      font-size:15px;
+    }
+
+    .options{display:grid;gap:10px}
+    .opt-btn{
+      width:100%;
+      text-align:left;
+      background:#334155;
+      color:var(--text);
+      border:1px solid #475569;
+      border-radius:14px;
+      padding:14px;
+      cursor:pointer;
+      font-size:14px;
+      line-height:1.5;
+    }
+    .opt-btn:hover{
+      background:#3f4d63;
+      border-color:#2dd4bf;
+      transform:translateX(4px);
+    }
+
+    .feedback{
+      margin-top:14px;
+      border-radius:14px;
+      padding:14px;
+      display:none;
+    }
+    .feedback.show{display:block}
+    .feedback.good{
+      background:rgba(6,78,59,.55);
+      border:1px solid rgba(16,185,129,.65);
+    }
+    .feedback.bad{
+      background:rgba(120,53,15,.5);
+      border:1px solid rgba(245,158,11,.65);
+    }
+    .feedback-title{font-weight:700;margin-bottom:6px}
+    .feedback-text{white-space:pre-line;line-height:1.6;font-size:14px}
+
+    .btn,.btn2{
+      border:none;
+      border-radius:12px;
+      padding:11px 14px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn{background:var(--teal);color:#fff}
+    .btn:hover{background:var(--teal2)}
+    .btn2{background:#be123c;color:#fff}
+    .btn2:hover{background:#e11d48}
+
+    .scene2-head{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-bottom:14px;
+    }
+    .scene2-badge{
+      width:48px;height:48px;border-radius:50%;
+      display:grid;place-items:center;font-size:22px;
+      background:linear-gradient(135deg,#fb7185,#db2777);
+    }
+
+    .takeaway{
+      text-align:left;
+      background:rgba(51,65,85,.45);
+      border-radius:16px;
+      padding:14px;
+      margin-top:16px;
+      line-height:1.7;
+      font-size:14px;
+    }
+
+    .license h3{margin:0 0 10px;color:#67e8f9;font-size:18px}
+    .license-subtitle{font-weight:700;color:#e2e8f0;margin-bottom:10px}
+    .license-meta{color:var(--muted);margin-bottom:12px}
+    .references ol{margin:8px 0 0 20px;padding:0}
+    .references li{margin-bottom:10px}
+
+    @media (max-width:1080px){
+      .main{grid-template-columns:1fr}
+      .right-col{position:static}
+      .sim-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header class="header">
+    <div class="header-top">
+      <div class="title-wrap">
+        <div class="logo">💊</div>
+        <div>
+          <h1>Pharmacist Clinical Training Simulator</h1>
+          <div class="subtitle">Swallowing difficulties in a patient with Alzheimer’s disease</div>
+          <div class="subline">Teaching case for pharmacy training</div>
+          <div class="subline">Learning material design: Professor. 陳崇鈺 Research Team (Huu-Hiep Tran)</div>
+        </div>
+      </div>
+      <div class="progress">
+        <div class="label">Learning Progress</div>
+        <div class="value" id="progress-text">0 / 5</div>
+      </div>
+    </div>
+    <div class="case-bg">
+      <strong>📋 Case Background:</strong><br>
+      K. C. Lin is a 76-year-old man with Alzheimer’s disease, chronic oropharyngeal dysphagia, hypothyroidism, hypertension, and depression. He was brought to the emergency department after fever, productive cough, dyspnea, and repeated choking episodes during meals and medication administration. The team suspects micro-aspiration pneumonia.<br><br>
+      The pharmacist is asked to identify drug-related problems, evaluate unsafe medication administration practices, and counsel the caregiver on preventing recurrent aspiration pneumonia. Later, the case focuses on discharge counseling and extended knowledge questions on dysphagia, aspiration prevention, and medication optimization.
+    </div>
+  </header>
+
+  <section class="main">
+    <aside class="left-col">
+      <div class="card card-pad">
+        <div class="patient-head">
+          <div class="avatar-round">👴🏻</div>
+          <div>
+            <div style="font-weight:700;font-size:18px">K. C. Lin</div>
+            <div class="small">76 years old / Male / ED then follow-up</div>
+          </div>
+        </div>
+        <div class="summary-box">
+          <div><span class="k">Main problem:</span> Aspiration pneumonia with dysphagia and unsafe medication administration</div>
+          <div><span class="k">Medical history:</span> Alzheimer’s disease, hypothyroidism, hypertension, depression, GERD</div>
+          <div><span class="k">Care issue:</span> Caregiver crushes tablets and gives levothyroxine with meals</div>
+        </div>
+      </div>
+
+      <details class="card">
+        <summary><span>📋 Case Note</span><span>▾</span></summary>
+        <div class="detail-content text-block">
+          <p class="section-title">Present Illness</p>
+          <p>Mr. Lin developed repeated coughing during meals and choking while taking medications mixed with food. He then developed fever, thicker phlegm, and dyspnea. His daughter also noted increased apathy, fatigue, agitation, aggressiveness, and visual hallucinations.</p>
+          <p class="section-title">Past History</p>
+          Major depressive disorder that developed after the death of his wife (11 years).</p><p>Alzheimer’s disease was diagnosed (8 years) with gradual cognitive and functional decline.</p><p>Hypothyroidism on replacement therapy (5 years).</p><p>Hypertension, controlled with medication (4 years).</p><p>Chronic oropharyngeal dysphagia identified in recent years (Score 4, Scale ASHA-NOMS); requires supervision during meals.</p><p>Previous GERD. Previous episodes of choking, but no prior hospitalization for pneumonia.</p>
+
+        </div>
+      </details>
+
+      <details class="card">
+        <summary><span>📝 Social / Caregiver Notes</span><span>▾</span></summary>
+        <div class="detail-content text-block">
+          <p>Lives with daughter, who is the primary caregiver. Family reports caregiver burden related to behavioral disturbance, nighttime restlessness, and feeding assistance.</p>
+          <p>At home, tablets were routinely crushed. Sertraline was crushed and mixed with yogurt. Levothyroxine was administered with meals rather than fasting. The patient often lies down soon after eating.</p>
+        </div>
+      </details>
+
+      <details class="card">
+        <summary><span>💊 History Medications</span><span>▾</span></summary>
+        <div class="detail-content">
+          <table>
+            <thead>
+              <tr><th>Drug</th><th>Formulation</th><th>Dose / Route</th><th>Frequency</th><th>Start</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Ampicillin–sulbactam</td><td>Injection (IV)</td><td>1.5–3 g IV</td><td>q6–8h</td><td>19-Jan</td></tr>
+              <tr><td>Acetaminophen</td><td>Suspension</td><td>500 mg PO/PR</td><td>PRN</td><td>19-Jan</td></tr>
+              <tr><td>Donepezil</td><td>Film-coated tablet</td><td>10 mg PO</td><td>QD</td><td>Long-term</td></tr>
+              <tr><td>Memantine</td><td>Film-coated tablet</td><td>10 mg PO</td><td>BID</td><td>Long-term</td></tr>
+              <tr><td>Sertraline</td><td>Film-coated tablet</td><td>50 mg PO</td><td>QD</td><td>Long-term</td></tr>
+              <tr><td>Losartan</td><td>Film-coated tablet</td><td>25 mg PO</td><td>BID</td><td>Long-term</td></tr>
+              <tr><td>Levothyroxine</td><td>Tablet</td><td>50 mcg PO</td><td>QD</td><td>Long-term</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="card">
+        <summary><span>❤️ Vital Signs</span><span>▾</span></summary>
+        <div class="detail-content">
+          <div class="text-block">
+            <p><span class="section-title">Measurement date:</span> 2026/01/19</p>
+          </div>
+          <div class="mini-cards">
+            <div class="mini-card"><div class="k">Blood Pressure</div><div class="v">132/78</div></div>
+            <div class="mini-card"><div class="k">Heart Rate</div><div class="v">103</div></div>
+            <div class="mini-card"><div class="k">Respiratory Rate</div><div class="v">26</div></div>
+            <div class="mini-card"><div class="k">Temperature</div><div class="v">38.2°C</div></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="card">
+        <summary><span>🏥 Physical Examination</span><span>▾</span></summary>
+        <div class="detail-content text-block">
+          <p>Dry oral mucosa, weak cough, reduced gag reflex. Right lower lung with crackles and coarse inspiratory sounds. More confused than baseline. MMSE 22, CDR 1.</p>
+        </div>
+      </details>
+
+      <details class="card">
+        <summary><span>🧪 Lab Values</span><span>▾</span></summary>
+        <div class="detail-content">
+          <table>
+            <thead>
+              <tr><th>Test</th><th>01/19</th><th>01/20</th><th>Reference</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Temperature (°C)</td><td class="abn">38.2</td><td class="abn">37.8</td><td>36–37.5</td></tr>
+              <tr><td>SpO₂ (%)</td><td class="abn">92</td><td>95</td><td>≥95</td></tr>
+              <tr><td>WBC (×10³/µL)</td><td class="abn">12.2</td><td class="abn">10.8</td><td>4–10</td></tr>
+              <tr><td>Neutrophils (%)</td><td class="abn">76</td><td>71</td><td>45–75</td></tr>
+              <tr><td>Lymphocytes (%)</td><td class="abn">17</td><td>20</td><td>20–35</td></tr>
+              <tr><td>CRP (mg/dL)</td><td class="abn">16.3</td><td class="abn">11.9</td><td>&lt;1.0</td></tr>
+              <tr><td>Procalcitonin (ng/mL)</td><td class="abn">0.3</td><td class="abn">0.2</td><td>&lt;0.1</td></tr>
+              <tr><td>Creatinine (mg/dL)</td><td>0.81</td><td>0.80</td><td>0.6–1.3</td></tr>
+              <tr><td>Free T4 (01/19)</td><td class="abn">0.77</td><td>-</td><td>0.8–1.8</td></tr>
+              <tr><td>TSH (01/19)</td><td class="abn">4.1</td><td>-</td><td>0.4–4.0</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="card hidden" id="overview-card">
+        <summary><span>🔬 Overview of Key Assessment Data</span><span>▾</span></summary>
+        <div class="detail-content">
+          <table>
+            <thead><tr><th>Item</th><th>Finding</th><th>Interpretation</th></tr></thead>
+            <tbody>
+              <tr><td>Main diagnosis</td><td>Micro-aspiration pneumonia</td><td>Likely triggered by swallowing dysfunction</td></tr>
+              <tr><td>Drug-related issue</td><td>Sertraline crushed and mixed with yogurt</td><td>May reduce absorption due to pH-dependent properties</td></tr>
+              <tr><td>Drug-related issue</td><td>Levothyroxine given with meals</td><td>Likely reduced effectiveness and worsened fatigue/cognition</td></tr>
+              <tr><td>Care practice</td><td>Lies down soon after meals</td><td>Increases reflux and aspiration risk</td></tr>
+              <tr><td>Protective reflex</td><td>Weak cough and reduced gag reflex</td><td>Raises risk of silent aspiration</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </aside>
+
+    <section class="right-col">
+      <div class="sim-grid">
+        <div class="sim-stage">
+          <div class="window"></div>
+
+          <button class="monitor-btn" id="quiz-btn" type="button">
+            <svg viewBox="0 0 100 30" width="100%" height="34">
+              <path d="M0,15 L20,15 L25,5 L30,25 L35,15 L100,15" fill="none" stroke="#10b981" stroke-width="2.2" />
+            </svg>
+            <div class="txt">Click for quiz</div>
+          </button>
+
+          <div class="desk">
+            <div class="desk-top"></div>
+            <div class="desk-mid">
+              <div class="desk-icon">📋</div>
+              <div class="desk-cloth"></div>
+            </div>
+            <div class="desk-legs"><span></span><span></span></div>
+          </div>
+
+          <div class="character char-left" id="physician-char">
+            <div class="char-icon physician">👩‍⚕️</div>
+            <div class="char-label">Physician</div>
+            <div class="char-note">Click to talk</div>
+          </div>
+
+          <div class="character char-center">
+            <div class="char-icon pharmacist">🧑‍🔬</div>
+            <div class="char-label">You (Pharmacist)</div>
+          </div>
+
+          <div class="character char-right" id="caregiver-char">
+            <div class="char-icon caregiver">👩🏻</div>
+            <div class="char-label">Caregiver</div>
+            <div class="char-note">Click to talk</div>
+          </div>
+
+          <div class="floating-tip" id="instruction-overlay">
+            👆 Click <strong>Physician</strong> to start Scene 1
+          </div>
+        </div>
+
+        <div class="card stats card-pad">
+          <h3>Learning Statistics</h3>
+          <div class="stats-grid">
+            <div class="stat-box"><div class="k">Total Questions</div><div class="v" id="stat-total">0</div></div>
+            <div class="stat-box"><div class="k">Correct Answers</div><div class="v" id="stat-correct">0</div></div>
+            <div class="stat-box"><div class="k">Wrong Answers</div><div class="v" id="stat-wrong">0</div></div>
+            <div class="stat-box"><div class="k">Learning Progress</div><div class="v" id="stat-progress">0 / 5</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialogue-box hidden" id="dialogue-box">
+        <div class="speaker-row">
+          <div class="speaker-avatar" id="speaker-avatar"></div>
+          <div>
+            <div class="speaker-name" id="speaker-name"></div>
+            <div class="speaker-role" id="speaker-role"></div>
+          </div>
+        </div>
+        <div class="question-box" id="question-text"></div>
+        <div class="options" id="answer-options"></div>
+        <div class="feedback" id="feedback-box">
+          <div class="feedback-title" id="feedback-title"></div>
+          <div class="feedback-text" id="feedback-text"></div>
+          <div style="margin-top:12px">
+            <button class="btn" id="feedback-btn" type="button">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="scene2-panel hidden" id="scene2-panel">
+        <div class="scene2-head">
+          <div class="scene2-badge">📌</div>
+          <div>
+            <div style="font-weight:700">Scene 2: Discharge and follow-up counseling</div>
+            <div class="small">Recurrence prevention and community pharmacy counseling</div>
+          </div>
+        </div>
+        <div class="question-box" style="margin-bottom:0">
+After antibiotic treatment, Mr. Lin’s fever subsided, breathing stabilized, and alertness gradually returned toward baseline. The focus then shifted from treating infection to preventing recurrence.
+
+The clinical pharmacist counseled his daughters on safe medication administration, dosage-form preparation, adequate water intake, and maintaining an upright position during and after meals. Mr. Lin was discharged on Jan 24th.
+        </div>
+        <div style="margin-top:14px">
+          <button class="btn2" id="scene2-start-btn" type="button">Start Scene 2</button>
+        </div>
+      </div>
+
+      <div class="extension-panel hidden" id="extension-panel"></div>
+      <div class="quiz-box hidden" id="quiz-box"></div>
+    </section>
+  </section>
+
+  <section class="license">
+    <h3>License</h3>
+    <div class="license-subtitle">Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)</div>
+    <div class="license-meta">
+      Author: Huu Hiep Tran<br>
+      Affiliation: Professor. 陳崇鈺 Research Team (Huu-Hiep Tran), Kaohsiung Medical University<br>
+      Project: Pharmacist Clinical Training Simulator – Swallowing Difficulties in a Patient with Alzheimer’s Disease
+    </div>
+    <p>This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.</p>
+  </section>
+</div>
+
+<script>
+const stats = { total: 0, correct: 0, wrong: 0 };
+
+const state = {
+  stageCompleted: new Set(),
+  scene2Unlocked: false,
+  extensionUnlocked: false,
+  extensionCompleted: false
+};
+
+const extensionState = { current: 0 };
+
+const dialogues = {
+  patient_locked: {
+    speaker: "Ms. Lin",
+    role: "Daughter / Caregiver",
+    avatar: "👩🏻",
+    avatarBg: "linear-gradient(135deg,#c084fc,#9333ea)",
+    question: "The caregiver discussion becomes available after the physician–pharmacist discussion is completed.",
+    options: [
+      {
+        text: "Understood. I will speak with the physician first.",
+        correct: true,
+        endResponse: true,
+        feedback: "Good. Begin with the acute clinical review before caregiver counseling."
+      }
+    ]
+  },
+
+  doctor: {
+    speaker: "Dr. Chen",
+    role: "Attending Physician",
+    avatar: "👩‍⚕️",
+    avatarBg: "linear-gradient(135deg,#60a5fa,#2563eb)",
+    question: "Pharmacist, this patient with Alzheimer’s disease likely has aspiration pneumonia. He keeps coughing during meals and medication administration. Mr. Lin often forgets to swallow and keeps food in his mouth. Which cognitive deficit most contributes to this problem?",
+    options: [
+      {
+        text: "Impaired executive function and coordination",
+        correct: true,
+        feedback: "Correct. Oral phase dysphagia in Alzheimer’s disease is closely linked to impaired executive function and coordination.",
+        next: "doctor_immediate"
+      },
+      {
+        text: "Hypertension",
+        correct: false,
+        feedback: "Incorrect. Hypertension does not explain food holding and delayed swallow initiation.",
+        retry: "doctor"
+      },
+      {
+        text: "Thyroid dysfunction",
+        correct: false,
+        feedback: "Incorrect. Thyroid dysfunction may worsen fatigue or cognition, but it does not best explain this oral phase swallowing behavior.",
+        retry: "doctor"
+      },
+      {
+        text: "Visual impairment",
+        correct: false,
+        feedback: "Incorrect. Visual impairment is not the main cause of this swallowing behavior.",
+        retry: "doctor"
+      }
+    ]
+  },
+
+  doctor_immediate: {
+    speaker: "Dr. Chen",
+    role: "Attending Physician",
+    avatar: "👩‍⚕️",
+    avatarBg: "linear-gradient(135deg,#60a5fa,#2563eb)",
+    question: "Given the repeated choking during meals and medication administration, what is the most immediate pharmacy-related concern?",
+    options: [
+      {
+        text: "Unsafe oral administration due to dysphagia, so oral medications should be reviewed and a swallow assessment requested.",
+        correct: true,
+        feedback: "Correct. Choking during medication intake indicates unsafe swallowing and a high risk of aspiration. Requesting swallow assessment before continuing oral administration is the most immediate action.",
+        next: "doctor_crp"
+      },
+      {
+        text: "The first step is to immediately stop all chronic medications permanently.",
+        correct: false,
+        feedback: "Incorrect. The first priority is to assess swallowing safety and prevent further aspiration, not to discontinue all chronic therapy permanently.",
+        retry: "doctor_immediate"
+      }
+    ]
+  },
+
+  doctor_crp: {
+    speaker: "Dr. Chen",
+    role: "Attending Physician",
+    avatar: "👩‍⚕️",
+    avatarBg: "linear-gradient(135deg,#60a5fa,#2563eb)",
+    question: "After 24 hours, CRP decreases from 16.3 to 11.9 and the patient is clinically improving. What is the best antimicrobial plan?",
+    options: [
+      {
+        text: "Continue current therapy and monitor response.",
+        correct: true,
+        feedback: "Correct. The decreasing CRP and improving clinical status support continuation of the current regimen and monitoring.",
+        next: "doctor_duration"
+      },
+      {
+        text: "Change antibiotics immediately because CRP is still elevated.",
+        correct: false,
+        feedback: "Incorrect. CRP is falling, which supports current treatment response.",
+        retry: "doctor_crp"
+      }
+    ]
+  },
+
+  doctor_duration: {
+    speaker: "Dr. Chen",
+    role: "Attending Physician",
+    avatar: "👩‍⚕️",
+    avatarBg: "linear-gradient(135deg,#60a5fa,#2563eb)",
+    question: "Mr. Lin has mild aspiration pneumonia and shows clinical improvement after 48 hours. What is the most appropriate total antibiotic duration?",
+    options: [
+      {
+        text: "3 days",
+        correct: false,
+        feedback: "Incorrect. Three days is generally too short for aspiration pneumonia.",
+        retry: "doctor_duration"
+      },
+      {
+        text: "about 5 days",
+        correct: true,
+        feedback: "Correct. A short course of about 5 days is appropriate when aspiration pneumonia is mild and the patient has clear clinical improvement.",
+        next: "doctor_sertraline_mechanism"
+      },
+      {
+        text: "14 days",
+        correct: false,
+        feedback: "Incorrect. Fourteen days is usually unnecessary in a mild clinically improving case.",
+        retry: "doctor_duration"
+      },
+      {
+        text: "30 days",
+        correct: false,
+        feedback: "Incorrect. This is far longer than needed in this scenario.",
+        retry: "doctor_duration"
+      }
+    ]
+  },
+
+  doctor_sertraline_mechanism: {
+    speaker: "Dr. Chen",
+    role: "Attending Physician",
+    avatar: "👩‍⚕️",
+    avatarBg: "linear-gradient(135deg,#60a5fa,#2563eb)",
+    question: "Sertraline tablets are crushed and mixed with yogurt. The patient’s depressive symptoms remain uncontrolled. Based on sertraline’s physicochemical properties, which mechanism most likely explains the reduced therapeutic effect?",
+    options: [
+      {
+        text: "Acidic environments decrease dissolution",
+        correct: false,
+        feedback: "Incorrect. This does not best explain the problem here.",
+        retry: "doctor_sertraline_mechanism"
+      },
+      {
+        text: "Neutral or less acidic media reduce the proportion of non-ionized drug available for absorption",
+        correct: true,
+        feedback: "Correct. The less acidic environment may reduce sertraline absorption and contribute to poor symptom control.",
+        next: "doctor_medreview"
+      },
+      {
+        text: "The calcium in yogurt chelates sertraline, creating a large complex that is physically difficult to swallow",
+        correct: false,
+        feedback: "Incorrect. Chelation is not the main explanation here.",
+        retry: "doctor_sertraline_mechanism"
+      },
+      {
+        text: "Yogurt accelerates elimination",
+        correct: false,
+        feedback: "Incorrect. Accelerated elimination is not the main mechanism.",
+        retry: "doctor_sertraline_mechanism"
+      }
+    ]
+  },
+
+  doctor_medreview: {
+    speaker: "Dr. Chen",
+    role: "Attending Physician",
+    avatar: "👩‍⚕️",
+    avatarBg: "linear-gradient(135deg,#60a5fa,#2563eb)",
+    question: "The caregiver says she crushes tablets at home. Sertraline is crushed and mixed with yogurt, and levothyroxine is given with meals. Which statement best identifies the key drug-related problems?",
+    options: [
+      {
+        text: "Sertraline absorption may be reduced when crushed and mixed with yogurt, and levothyroxine effectiveness may be reduced when given with meals.",
+        correct: true,
+        feedback: "Correct. Sertraline has pH-dependent absorption, and levothyroxine should be given under fasting conditions for reliable effectiveness.",
+        next: "doctor_plan"
+      },
+      {
+        text: "These practices are harmless because crushing is always acceptable in dysphagia.",
+        correct: false,
+        feedback: "Incorrect. Crushing and mixing medications must be assessed carefully because formulation and physicochemical properties matter.",
+        retry: "doctor_medreview"
+      }
+    ]
+  },
+
+  doctor_plan: {
+    speaker: "Dr. Chen",
+    role: "Attending Physician",
+    avatar: "👩‍⚕️",
+    avatarBg: "linear-gradient(135deg,#60a5fa,#2563eb)",
+    question: "What collaborative plan should the pharmacist provide before discharge?",
+    options: [
+      {
+        text: "Review dosage forms, correct administration technique, counsel on upright positioning and aspiration warning signs, and optimize home medication practices with the caregiver.",
+        correct: true,
+        feedback: "Correct. This addresses recurrence prevention, safe administration, and long-term pharmacotherapy optimization.",
+        next: "caregiver_scene1"
+      },
+      {
+        text: "Focus only on antibiotic duration because recurrence prevention is outside pharmacy care.",
+        correct: false,
+        feedback: "Incorrect. Pharmacists play an important role in preventing recurrence by addressing administration technique and medication-related problems.",
+        retry: "doctor_plan"
+      }
+    ]
+  },
+
+  caregiver_scene1: {
+    speaker: "Ms. Lin",
+    role: "Daughter / Caregiver",
+    avatar: "👩🏻",
+    avatarBg: "linear-gradient(135deg,#c084fc,#9333ea)",
+    question: "I crushed sertraline and mixed it with yogurt because he cannot swallow tablets. Was that acceptable?",
+    options: [
+      {
+        text: "Not ideal. Sertraline absorption may be reduced in less acidic media, so the preparation method should be adjusted after checking suitability and the best vehicle.",
+        correct: true,
+        feedback: "Correct. This is a key pharmacy intervention in the case.",
+        next: "caregiver_scene1b"
+      },
+      {
+        text: "Yes, yogurt is always the best option for crushed tablets.",
+        correct: false,
+        feedback: "Incorrect. The best vehicle depends on the drug’s formulation and physicochemical properties.",
+        retry: "caregiver_scene1"
+      }
+    ]
+  },
+
+  caregiver_scene1b: {
+    speaker: "Ms. Lin",
+    role: "Daughter / Caregiver",
+    avatar: "👩🏻",
+    avatarBg: "linear-gradient(135deg,#c084fc,#9333ea)",
+    question: "I also gave levothyroxine with breakfast because that was easier for him. Could that matter?",
+    options: [
+      {
+        text: "Yes. Levothyroxine should be given on an empty stomach with water and food delayed, otherwise absorption may decrease and fatigue or cognitive slowing may worsen.",
+        correct: true,
+        feedback: "Correct. This may contribute to fatigue, apathy, and cognitive impairment in this patient.\n\nScene 1 is complete. Next, the case moves to discharge counseling and recurrence prevention.",
+        unlockScene2: true
+      },
+      {
+        text: "No. Levothyroxine works the same whether it is taken with meals or fasting.",
+        correct: false,
+        feedback: "Incorrect. Food reduces levothyroxine absorption.",
+        retry: "caregiver_scene1b"
+      }
+    ]
+  },
+
+  prevention1: {
+    speaker: "Ms. Lin",
+    role: "Daughter / Caregiver",
+    avatar: "👩🏻",
+    avatarBg: "linear-gradient(135deg,#c084fc,#9333ea)",
+    question: "I know he cannot swallow tablets well. If I need to disperse sertraline for him, what kind of liquid would be most appropriate to help the medicine work better?",
+    options: [
+      {
+        text: "Milk",
+        correct: false,
+        feedback: "Incorrect. Milk is not the best choice here.",
+        retry: "prevention1"
+      },
+      {
+        text: "Plain water",
+        correct: false,
+        feedback: "Incorrect. Water is less suitable than an acidic medium in this case.",
+        retry: "prevention1"
+      },
+      {
+        text: "Orange or lemon juice",
+        correct: true,
+        feedback: "Correct. An acidic liquid such as orange or lemon juice is the most appropriate choice.",
+        next: "prevention2"
+      },
+      {
+        text: "Nutritional supplement shake",
+        correct: false,
+        feedback: "Incorrect. This is not the best option for maximizing absorption.",
+        retry: "prevention1"
+      }
+    ]
+  },
+
+  prevention2: {
+    speaker: "Ms. Lin",
+    role: "Daughter / Caregiver",
+    avatar: "👩🏻",
+    avatarBg: "linear-gradient(135deg,#c084fc,#9333ea)",
+    question: "After we changed the way we gave sertraline and started giving levothyroxine on an empty stomach, his MMSE score improved from 22 to 26 (after about 6 months). Why did his thinking seem to get a little better?",
+    options: [
+      {
+        text: "The placebo effect of the new administration routine.",
+        correct: false,
+        feedback: "Incorrect. This does not best explain the observed change.",
+        retry: "prevention2"
+      },
+      {
+        text: "Spontaneous remission of Alzheimer’s disease symptoms.",
+        correct: false,
+        feedback: "Incorrect. Alzheimer’s disease does not spontaneously remit in this way.",
+        retry: "prevention2"
+      },
+      {
+        text: "Improved drug absorption leading to better management of depression and hypothyroidism, which were contributing to cognitive impairment.",
+        correct: true,
+        feedback: "Correct. Better administration improved the effectiveness of sertraline and levothyroxine, which likely improved reversible contributors to cognitive dysfunction.",
+        next: "prevention3"
+      },
+      {
+        text: "The sugar content in the orange juice providing more energy to the brain.",
+        correct: false,
+        feedback: "Incorrect. Sugar content is not the main explanation.",
+        retry: "prevention2"
+      }
+    ]
+  },
+
+  prevention3: {
+    speaker: "Ms. Lin",
+    role: "Daughter / Caregiver",
+    avatar: "👩🏻",
+    avatarBg: "linear-gradient(135deg,#c084fc,#9333ea)",
+    question: "Dad sometimes does not cough during meals anymore, even with water. Does that mean swallowing has improved?",
+    options: [
+      {
+        text: "Not necessarily. This could represent silent aspiration because his cough reflex is weak, so we still need to monitor carefully.",
+        correct: true,
+        feedback: "Correct. Absence of cough does not guarantee safe swallowing in dementia and dysphagia.",
+        next: "prevention4"
+      },
+      {
+        text: "Yes. No cough means aspiration risk is gone.",
+        correct: false,
+        feedback: "Incorrect. This can be a sign of silent aspiration rather than recovery.",
+        retry: "prevention3"
+      }
+    ]
+  },
+
+  prevention4: {
+    speaker: "Ms. Lin",
+    role: "Daughter / Caregiver",
+    avatar: "👩🏻",
+    avatarBg: "linear-gradient(135deg,#c084fc,#9333ea)",
+    question: "He gets tired after eating, so I usually let him lie down right away. Is that okay?",
+    options: [
+      {
+        text: "No. He should stay upright for at least 30 minutes after eating to reduce reflux and aspiration risk.",
+        correct: true,
+        feedback: "Correct. Upright positioning during and after meals is an important recurrence-prevention strategy.",
+        next: "prevention5"
+      },
+      {
+        text: "Yes. Lying down immediately is fine as long as he finishes swallowing.",
+        correct: false,
+        feedback: "Incorrect. Immediate supine positioning increases reflux and aspiration risk.",
+        retry: "prevention4"
+      }
+    ]
+  },
+
+  prevention5: {
+    speaker: "Ms. Lin",
+    role: "Daughter / Caregiver",
+    avatar: "👩🏻",
+    avatarBg: "linear-gradient(135deg,#c084fc,#9333ea)",
+    question: "Why is oral hygiene still so important for him if he is at risk of aspiration?",
+    options: [
+      {
+        text: "To reduce respiratory pathogens in dental plaque and saliva so aspiration is less likely to seed the lungs with harmful bacteria.",
+        correct: true,
+        feedback: "Correct. Good oral hygiene is a key prevention strategy in aspiration pneumonia.",
+        completeScenes: true
+      },
+      {
+        text: "To strengthen swallowing muscles directly.",
+        correct: false,
+        feedback: "Incorrect. Oral hygiene helps primarily by lowering pathogenic bacterial burden.",
+        retry: "prevention5"
+      }
+    ]
+  }
+};
+
+const extensionQuestions = [
+  {
+    question: "You are performing a medication reconciliation for another patient with dysphagia. If the patient is on long-term Proton Pump Inhibitor (PPI) therapy for unclear indications. Why is deprescribing the PPI considered a preventive strategy for bacterial aspiration pneumonia?",
+    options: [
+      { text: "PPIs cause dry mouth (xerostomia), making swallowing difficult.", correct: false },
+      { text: "Acid suppression encourages gastric overgrowth of gram-negative bacteria, which are more virulent if aspirated.", correct: true },
+      { text: "PPIs interact with thickeners, turning liquids thin.", correct: false },
+      { text: "PPIs reduce the cough reflex by lowering substance P.", correct: false }
+    ],
+    feedback: "Correct. Acid suppression may promote gastric colonization with more virulent gram-negative organisms, which can worsen bacterial aspiration pneumonia if aspirated."
+  },
+  {
+    question: "Regarding oral hygiene in a patient at risk for aspiration, you are deciding whether to recommend routine Chlorhexidine mouthwash. Based on current evidence, which caution must be applied?",
+    options: [
+      { text: "Chlorhexidine is strongly recommended for all patients as it sterilizes the mouth completely.", correct: false },
+      { text: "Chlorhexidine is contraindicated because it degrades tooth enamel.", correct: false },
+      { text: "Chlorhexidine is controversial; while it kills bacteria, accidental aspiration of the solution itself can cause toxic lung injury and ARDS.", correct: true },
+      { text: "Chlorhexidine should only be used if the patient has no teeth.", correct: false }
+    ],
+    feedback: "Correct. Chlorhexidine is controversial in this setting because aspiration of the solution itself may cause toxic lung injury and ARDS."
+  },
+  {
+    question: "Which clinical change in this patient may be worsened by inadequate thyroid hormone replacement?",
+    options: [
+      { text: "Hypertension", correct: false },
+      { text: "Pneumonia", correct: false },
+      { text: "Cognitive decline", correct: true },
+      { text: "Fever", correct: false }
+    ],
+    feedback: "Correct. Undertreated hypothyroidism (hint: free T4 decreseased, TSH increased) may worsen fatigue, apathy, and cognitive impairment."
+  },
+  {
+    question: "Which class of medications should be avoided or minimized in elderly patients with dysphagia because they are independent risk factors for aspiration pneumonia?",
+    options: [
+      { text: "Antipsychotic medications", correct: true },
+      { text: "Proton pump inhibitors", correct: false },
+      { text: "Statins", correct: false },
+      { text: "Beta-blockers", correct: false }
+    ],
+    feedback: "Correct. Antipsychotics are associated with increased aspiration pneumonia risk."
+  },
+  {
+    question: "Which antihypertensive agent may help reduce aspiration pneumonia risk by increasing substance P and potentially improving cough and swallowing reflexes?",
+    options: [
+      { text: "Amlodipine", correct: false },
+      { text: "Losartan", correct: false },
+      { text: "Enalapril", correct: true },
+      { text: "Atenolol", correct: false }
+    ],
+    feedback: "Correct. ACE inhibitors such as enalapril may support airway sensory activity and cough reflex through substance P."
+  }
+];
+
+const quizState = {
+  current: 0,
+  questions: [
+    {
+      question: "Mr. Lin often forgets to swallow and keeps food in his mouth. Which cognitive deficit most contributes to this problem?",
+      type: "single",
+      options: [
+        { text: "Impaired executive function and coordination", correct: true },
+        { text: "Hypertension", correct: false },
+        { text: "Thyroid dysfunction", correct: false },
+        { text: "Visual impairment", correct: false }
+      ],
+      feedback: "Correct. Oral phase dysphagia in Alzheimer’s disease is closely linked to impaired executive function and coordination."
+    },
+    {
+      question: "Mr. Lin has mild aspiration pneumonia and shows clinical improvement after 48 hours. What is the most appropriate total antibiotic duration?",
+      type: "single",
+      options: [
+        { text: "3 days", correct: false },
+        { text: "about 5 days", correct: true },
+        { text: "14 days", correct: false },
+        { text: "30 days", correct: false }
+      ],
+      feedback: "Correct. A short course of about 5 days is appropriate when aspiration pneumonia is mild and clinically improving."
+    },
+    {
+      question: "Sertraline tablets are crushed and mixed with yogurt. The patient’s depressive symptoms remain uncontrolled. Based on sertraline’s physicochemical properties, which mechanism most likely explains the reduced therapeutic effect?",
+      type: "single",
+      options: [
+        { text: "Acidic environments decrease dissolution", correct: false },
+        { text: "Neutral or less acidic media reduce the proportion of non-ionized drug available for absorption", correct: true },
+        { text: "The calcium in yogurt chelates sertraline, creating a large complex that is physically difficult to swallow", correct: false },
+        { text: "Yogurt accelerates elimination", correct: false }
+      ],
+      feedback: "Correct. The less acidic medium may reduce sertraline absorption and lower effectiveness."
+    },
+    {
+      question: "Which of the following statements are correct? Select all that apply.",
+      type: "multi",
+      options: [
+        { text: "Underlying swallowing dysfunction can cause recurrence even after successful antibiotic treatment", correct: true },
+        { text: "Keeping the patient upright after meals helps reduce aspiration risk", correct: true },
+        { text: "PPIs may contribute to aspiration pneumonia risk through gastric colonization with more virulent bacteria", correct: true },
+        { text: "Absence of cough during meals always means swallowing is safe", correct: false }
+      ],
+      feedback: "Correct. These are all important preventive concepts in aspiration pneumonia management."
+    }
+  ]
+};
+
+function playWrongAnswerAudio() {
+  const u = new SpeechSynthesisUtterance("As a pharmacist, you should consider carefully before every response");
+  u.rate = 0.95;
+  u.pitch = 1;
+  u.volume = 1;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+}
+
+function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function canOpenCaregiver() {
+  return state.stageCompleted.has("scene1_dentist_complete");
+}
+
+function currentCaregiverKey() {
+  if (!state.stageCompleted.has("scene1_patient_start")) return "caregiver_scene1";
+  if (!state.stageCompleted.has("scene1_complete")) return "caregiver_scene1b";
+  return state.scene2Unlocked ? "prevention1" : "caregiver_scene1";
+}
+
+function getProgressText() {
+  if (state.extensionCompleted) return "5 / 5";
+  if (state.extensionUnlocked) return "4 / 5";
+  if (state.scene2Unlocked) return "2 / 5";
+  if (state.stageCompleted.has("scene1_dentist_complete")) return "1 / 5";
+  return "0 / 5";
+}
+
+function updateStats() {
+  document.getElementById("stat-total").textContent = stats.total;
+  document.getElementById("stat-correct").textContent = stats.correct;
+  document.getElementById("stat-wrong").textContent = stats.wrong;
+  const p = getProgressText();
+  document.getElementById("stat-progress").textContent = p;
+  document.getElementById("progress-text").textContent = p;
+}
+
+function hideAllInteractive() {
+  document.getElementById("dialogue-box").classList.add("hidden");
+  document.getElementById("scene2-panel").classList.add("hidden");
+  document.getElementById("quiz-box").classList.add("hidden");
+  document.getElementById("extension-panel").classList.add("hidden");
+}
+
+function startDialogue(key) {
+  const d = dialogues[key];
+  if (!d) {
+    console.error("Dialogue not found:", key);
+    alert("Dialogue not found: " + key);
+    return;
+  }
+
+  hideAllInteractive();
+
+  const dialogueBox = document.getElementById("dialogue-box");
+  dialogueBox.classList.remove("hidden");
+
+  const av = document.getElementById("speaker-avatar");
+  av.style.background = d.avatarBg;
+  av.textContent = d.avatar;
+
+  document.getElementById("speaker-name").textContent = d.speaker;
+  document.getElementById("speaker-role").textContent = d.role;
+  document.getElementById("question-text").textContent = d.question;
+
+  const answerOptions = document.getElementById("answer-options");
+  answerOptions.innerHTML = "";
+
+  const options = shuffleArray(d.options);
+  options.forEach((opt, idx) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "opt-btn";
+    b.textContent = `${String.fromCharCode(65 + idx)}. ${opt.text}`;
+    b.addEventListener("click", () => selectDialogueOption(opt, key));
+    answerOptions.appendChild(b);
+  });
+
+  const feedbackBox = document.getElementById("feedback-box");
+  feedbackBox.className = "feedback";
+
+  const feedbackBtn = document.getElementById("feedback-btn");
+  feedbackBtn.onclick = null;
+}
+
+function selectDialogueOption(opt, key) {
+  stats.total += 1;
+
+  const fb = document.getElementById("feedback-box");
+  const title = document.getElementById("feedback-title");
+  const text = document.getElementById("feedback-text");
+  const btn = document.getElementById("feedback-btn");
+
+  if (opt.correct) {
+    stats.correct += 1;
+    fb.className = "feedback good show";
+    title.textContent = "Correct";
+    text.textContent = opt.feedback;
+
+    if (key === "doctor_plan") state.stageCompleted.add("scene1_dentist_complete");
+    if (key === "caregiver_scene1") state.stageCompleted.add("scene1_patient_start");
+
+    if (opt.endResponse) {
+      btn.textContent = "Close";
+      btn.onclick = continueLearning;
+    } else if (opt.unlockScene2) {
+      state.stageCompleted.add("scene1_complete");
+      state.scene2Unlocked = true;
+      btn.textContent = "Open Scene 2";
+      btn.onclick = () => {
+        hideAllInteractive();
+        document.getElementById("scene2-panel").classList.remove("hidden");
+        updateStats();
+      };
+    } else if (opt.completeScenes) {
+      state.extensionUnlocked = true;
+      btn.textContent = "Open Extended Questions";
+      btn.onclick = () => {
+        startExtensionQuestions();
+        updateStats();
+      };
+    } else if (opt.next) {
+      btn.textContent = "Next";
+      btn.onclick = () => startDialogue(opt.next);
+    } else {
+      btn.textContent = "Continue";
+      btn.onclick = continueLearning;
+    }
+  } else {
+    stats.wrong += 1;
+    playWrongAnswerAudio();
+    fb.className = "feedback bad show";
+    title.textContent = "Not quite";
+    text.textContent = opt.feedback;
+    btn.textContent = "Try Again";
+    btn.onclick = () => startDialogue(opt.retry || key);
+  }
+
+  updateStats();
+}
+
+function continueLearning() {
+  hideAllInteractive();
+}
+
+function startScene2() {
+  startDialogue("prevention1");
+}
+
+function startExtensionQuestions() {
+  extensionState.current = 0;
+  renderExtensionQuestion();
+}
+
+function renderExtensionQuestion() {
+  hideAllInteractive();
+
+  const panel = document.getElementById("extension-panel");
+  const q = extensionQuestions[extensionState.current];
+
+  let html = `
+    <h3>Extended Questions</h3>
+    <div class="small" style="margin-bottom:10px">Question ${extensionState.current + 1} of ${extensionQuestions.length}</div>
+    <div class="question-box">${q.question}</div>
+    <div class="options">
+  `;
+
+  const shuffled = shuffleArray(q.options.map((o, i) => ({ ...o, originalIndex: i })));
+  shuffled.forEach((opt, idx) => {
+    html += `<button class="opt-btn" type="button" onclick="submitExtensionAnswer(${opt.originalIndex})">${String.fromCharCode(65 + idx)}. ${opt.text}</button>`;
+  });
+
+  html += `</div><div class="feedback" id="extension-feedback"></div>`;
+  panel.innerHTML = html;
+  panel.classList.remove("hidden");
+}
+
+function submitExtensionAnswer(index) {
+  const q = extensionQuestions[extensionState.current];
+  const correct = q.options[index].correct;
+
+  stats.total += 1;
+  if (correct) stats.correct += 1;
+  else {
+    stats.wrong += 1;
+    playWrongAnswerAudio();
+  }
+
+  updateStats();
+
+  const fb = document.getElementById("extension-feedback");
+  fb.className = `feedback ${correct ? "good" : "bad"} show`;
+  fb.innerHTML = `
+    <div class="feedback-title">${correct ? "Correct" : "Not Quite"}</div>
+    <div class="feedback-text">${q.feedback}</div>
+    <div style="margin-top:12px">
+      ${
+        correct
+          ? (extensionState.current < extensionQuestions.length - 1
+            ? `<button class="btn" type="button" onclick="nextExtensionQuestion()">Next Question</button>`
+            : `<button class="btn" type="button" onclick="completeExtension()">Finish Extended Questions</button>`)
+          : `<button class="btn" type="button" onclick="renderExtensionQuestion()">Try Again</button>`
+      }
+    </div>
+  `;
+}
+
+function nextExtensionQuestion() {
+  extensionState.current += 1;
+  renderExtensionQuestion();
+}
+
+function completeExtension() {
+  state.extensionCompleted = true;
+  showCompletion();
+}
+
+function showCompletion() {
+  document.getElementById("overview-card").classList.remove("hidden");
+  hideAllInteractive();
+
+  const box = document.getElementById("dialogue-box");
+  box.classList.remove("hidden");
+  box.innerHTML = `
+    <div style="text-align:center;padding:10px 0">
+      <div style="font-size:56px">🎉</div>
+      <h2>Congratulations—Learning Complete!</h2>
+      <div class="small">You have completed both scenes and the extended questions.</div>
+
+      <div class="takeaway">
+        <div style="font-weight:700;color:#67e8f9;margin-bottom:8px">Takeaway Information / Teaching Points</div>
+        <div>✓ Oral phase dysphagia in Alzheimer’s disease is strongly linked to impaired executive function and coordination.</div>
+        <div>✓ Mild aspiration pneumonia that improves quickly often needs only a short antibiotic course.</div>
+        <div>✓ Sertraline absorption can be affected by the medium used for dispersion; acidic liquids are more appropriate in this case.</div>
+        <div>✓ Levothyroxine should be given fasting; correcting administration can improve reversible contributors to cognitive impairment.</div>
+        <div>✓ Silent aspiration, reflux, and poor oral hygiene all contribute to recurrence risk.</div>
+        <div>✓ Deprescribing inappropriate PPIs and being cautious with chlorhexidine can also be relevant preventive strategies.</div>
+      </div>
+
+      <section class="references" style="margin-top:16px;text-align:left">
+        <h3 style="margin:0 0 10px;color:#67e8f9;font-size:18px">References</h3>
+        <ol>
+          <li>Benzi, J. R. de L., &amp; Mastroianni, P. C. (2018). Drug administration adjustments for elderly patients with dysphagia: A case report. <em>Dementia &amp; Neuropsychologia</em>, 12(1), 15–25. https://doi.org/10.1590/1980-57642018dn12-010015</li>
+          <li>Mandell, L. A., &amp; Niederman, M. S. (2019). Aspiration pneumonia. <em>The New England Journal of Medicine</em>, 380(7), 651–663. https://doi.org/10.1056/NEJMra1714562</li>
+          <li>Ebihara, S., Sekiya, H., Miyagi, M., Ebihara, T., &amp; Okazaki, T. (2016). Dysphagia, dystussia, and aspiration pneumonia in elderly people. <em>Journal of Thoracic Disease</em>, 8(3), 632–639. https://doi.org/10.21037/jtd.2016.02.60</li>
+          <li>Tsunoda, H., Okami, Y., Honda, Y., Shiroshita, A., Kataoka, Y., Tsujimoto, Y., &amp; Matsumura, K. (2022). Effectiveness of angiotensin converting enzyme inhibitors in preventing pneumonia: A systematic review and meta-analysis. <em>Journal of General and Family Medicine</em>, 23(4), 217–227. https://doi.org/10.1002/jgf2.532</li>
+        </ol>
+      </section>
+
+      <div style="margin-top:16px">
+        <button class="btn" type="button" onclick="resetApp()">Start Over</button>
+      </div>
+    </div>
+  `;
+  updateStats();
+}
+
+function resetApp() {
+  stats.total = 0;
+  stats.correct = 0;
+  stats.wrong = 0;
+  state.stageCompleted = new Set();
+  state.scene2Unlocked = false;
+  state.extensionUnlocked = false;
+  state.extensionCompleted = false;
+  extensionState.current = 0;
+
+  document.getElementById("overview-card").classList.add("hidden");
+  document.getElementById("dialogue-box").classList.add("hidden");
+  document.getElementById("scene2-panel").classList.add("hidden");
+  document.getElementById("quiz-box").classList.add("hidden");
+  document.getElementById("extension-panel").classList.add("hidden");
+
+  updateStats();
+}
+
+function startQuizMode() {
+  hideAllInteractive();
+  quizState.current = 0;
+  renderQuizQuestion();
+}
+
+function renderQuizQuestion() {
+  const q = quizState.questions[quizState.current];
+  const box = document.getElementById("quiz-box");
+  box.classList.remove("hidden");
+
+  let html = `
+    <h3>Clinical Quiz</h3>
+    <div class="small" style="margin-bottom:10px">Question ${quizState.current + 1} of ${quizState.questions.length}</div>
+    <div class="question-box">${q.question}</div>
+    <div class="options" id="quiz-options">
+  `;
+
+  const shuffled = shuffleArray(q.options.map((opt, i) => ({ ...opt, originalIndex: i })));
+  shuffled.forEach((opt, idx) => {
+    if (q.type === "multi") {
+      html += `
+        <label class="opt-btn" style="display:block;cursor:pointer">
+          <input type="checkbox" data-original-idx="${opt.originalIndex}" style="margin-right:10px;transform:scale(1.1)">
+          ${String.fromCharCode(65 + idx)}. ${opt.text}
+        </label>
+      `;
+    } else {
+      html += `<button class="opt-btn" type="button" onclick="submitQuizSingle(${opt.originalIndex})">${String.fromCharCode(65 + idx)}. ${opt.text}</button>`;
+    }
+  });
+
+  html += `</div>`;
+
+  if (q.type === "multi") {
+    html += `<div style="margin-top:12px"><button class="btn" type="button" onclick="submitQuizMulti()">Submit Answer</button></div>`;
+  }
+
+  html += `<div class="feedback" id="quiz-feedback"></div>`;
+  box.innerHTML = html;
+}
+
+function submitQuizSingle(index) {
+  const q = quizState.questions[quizState.current];
+  const correct = q.options[index].correct;
+
+  stats.total += 1;
+  if (correct) stats.correct += 1;
+  else {
+    stats.wrong += 1;
+    playWrongAnswerAudio();
+  }
+
+  updateStats();
+  renderQuizFeedback(correct, q.feedback);
+}
+
+function submitQuizMulti() {
+  const q = quizState.questions[quizState.current];
+  const checked = [...document.querySelectorAll('#quiz-options input[type="checkbox"]')]
+    .filter(el => el.checked)
+    .map(el => Number(el.dataset.originalIdx));
+
+  const correctIdx = q.options.map((o, i) => o.correct ? i : null).filter(v => v !== null);
+  const correct = checked.length === correctIdx.length && checked.every(i => correctIdx.includes(i));
+
+  stats.total += 1;
+  if (correct) stats.correct += 1;
+  else {
+    stats.wrong += 1;
+    playWrongAnswerAudio();
+  }
+
+  updateStats();
+  renderQuizFeedback(correct, q.feedback);
+}
+
+function renderQuizFeedback(correct, message) {
+  const fb = document.getElementById("quiz-feedback");
+  fb.className = `feedback ${correct ? "good" : "bad"} show`;
+  fb.innerHTML = `
+    <div class="feedback-title">${correct ? "Correct" : "Not Quite"}</div>
+    <div class="feedback-text">${message}</div>
+    <div style="margin-top:12px">
+      ${
+        quizState.current < quizState.questions.length - 1
+          ? `<button class="btn" type="button" onclick="nextQuizQuestion()">Next Question</button>`
+          : `<button class="btn" type="button" onclick="finishQuiz()">Complete Quiz</button>`
+      }
+    </div>
+  `;
+}
+
+function nextQuizQuestion() {
+  quizState.current += 1;
+  renderQuizQuestion();
+}
+
+function finishQuiz() {
+  const box = document.getElementById("quiz-box");
+  box.innerHTML = `
+    <div style="text-align:center;padding:10px 0">
+      <div style="font-size:56px">🎓</div>
+      <h2>Quiz Complete!</h2>
+      <div class="small">You have finished the quiz module.</div>
+      <div class="takeaway">
+        <div>Total Questions Attempted: ${stats.total}</div>
+        <div>Correct Answers: ${stats.correct}</div>
+        <div>Wrong Answers: ${stats.wrong}</div>
+      </div>
+      <div style="margin-top:16px">
+        <button class="btn" type="button" onclick="hideAllInteractive()">Back to Main Scene</button>
+      </div>
+    </div>
+  `;
+  updateStats();
+}
+
+// expose for inline handlers
+window.startDialogue = startDialogue;
+window.submitExtensionAnswer = submitExtensionAnswer;
+window.nextExtensionQuestion = nextExtensionQuestion;
+window.completeExtension = completeExtension;
+window.renderExtensionQuestion = renderExtensionQuestion;
+window.submitQuizSingle = submitQuizSingle;
+window.submitQuizMulti = submitQuizMulti;
+window.nextQuizQuestion = nextQuizQuestion;
+window.finishQuiz = finishQuiz;
+window.hideAllInteractive = hideAllInteractive;
+window.resetApp = resetApp;
+
+// button bindings
+document.getElementById("physician-char").addEventListener("click", () => startDialogue("doctor"));
+document.getElementById("caregiver-char").addEventListener("click", () => {
+  startDialogue(canOpenCaregiver() ? currentCaregiverKey() : "patient_locked");
+});
+document.getElementById("quiz-btn").addEventListener("click", startQuizMode);
+document.getElementById("scene2-start-btn").addEventListener("click", startScene2);
+
+updateStats();
+</script>
+</body>
+</html>
