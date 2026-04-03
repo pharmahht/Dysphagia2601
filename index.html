@@ -393,11 +393,32 @@
     .license-meta{color:var(--muted);margin-bottom:12px}
     .references ol{margin:8px 0 0 20px;padding:0}
     .references li{margin-bottom:10px}
+    .teacher-table-wrap{overflow-x:auto}
+    .team-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+    .team-grid input{
+      width:100%;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid #475569;
+      background:#0f172a;
+      color:#e5eefb;
+    }
+    .toolbar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
 
     @media (max-width:1080px){
       .main{grid-template-columns:1fr}
       .right-col{position:static}
       .sim-grid{grid-template-columns:1fr}
+      .team-grid{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -419,10 +440,32 @@
         <div class="value" id="progress-text">0 / 5</div>
       </div>
     </div>
+
     <div class="case-bg">
       <strong>📋 Case Background:</strong><br>
       K. C. Lin is a 76-year-old man with Alzheimer’s disease, chronic oropharyngeal dysphagia, hypothyroidism, hypertension, and depression. He was brought to the emergency department after fever, productive cough, dyspnea, and repeated choking episodes during meals and medication administration. The team suspects micro-aspiration pneumonia.<br><br>
       The pharmacist is asked to identify drug-related problems, evaluate unsafe medication administration practices, and counsel the caregiver on preventing recurrent aspiration pneumonia. Later, the case focuses on discharge counseling and extended knowledge questions on dysphagia, aspiration prevention, and medication optimization.
+    </div>
+
+    <div class="card card-pad" style="margin-top:16px">
+      <h3 style="margin:0 0 12px;color:#67e8f9">Team Information</h3>
+      <div class="team-grid">
+        <div>
+          <label for="group-name" class="small" style="display:block;margin-bottom:6px">Group name</label>
+          <input id="group-name" type="text" placeholder="Enter group name">
+        </div>
+        <div>
+          <label for="class-name" class="small" style="display:block;margin-bottom:6px">Class</label>
+          <input id="class-name" type="text" placeholder="Enter class">
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="btn" type="button" onclick="saveTeamInfo()">Save Team Info</button>
+        <button class="btn" type="button" onclick="exportTeacherCSV()">Export Teacher CSV</button>
+        <button class="btn" type="button" onclick="showSavedGroups()">Show Saved Groups</button>
+        <button class="btn" type="button" onclick="clearAllSavedSubmissions()">Clear Saved Data</button>
+      </div>
+      <div id="team-status" class="small" style="margin-top:10px"></div>
     </div>
   </header>
 
@@ -449,8 +492,7 @@
           <p class="section-title">Present Illness</p>
           <p>Mr. Lin developed repeated coughing during meals and choking while taking medications mixed with food. He then developed fever, thicker phlegm, and dyspnea. His daughter also noted increased apathy, fatigue, agitation, aggressiveness, and visual hallucinations.</p>
           <p class="section-title">Past History</p>
-          Major depressive disorder that developed after the death of his wife (11 years).</p><p>Alzheimer’s disease was diagnosed (8 years) with gradual cognitive and functional decline.</p><p>Hypothyroidism on replacement therapy (5 years).</p><p>Hypertension, controlled with medication (4 years).</p><p>Chronic oropharyngeal dysphagia identified in recent years (Score 4, Scale ASHA-NOMS); requires supervision during meals.</p><p>Previous GERD. Previous episodes of choking, but no prior hospitalization for pneumonia.</p>
-
+          <p>Alzheimer’s disease for 8 years, major depressive disorder after wife’s death, hypothyroidism, hypertension, GERD, and chronic oropharyngeal dysphagia. Previous choking episodes but no prior pneumonia admission.</p>
         </div>
       </details>
 
@@ -637,6 +679,46 @@ The clinical pharmacist counseled his daughters on safe medication administratio
 
       <div class="extension-panel hidden" id="extension-panel"></div>
       <div class="quiz-box hidden" id="quiz-box"></div>
+
+      <div class="card card-pad hidden" id="results-panel">
+        <h3 style="margin:0 0 12px;color:#67e8f9">Detailed Results</h3>
+        <div id="results-summary" class="small" style="margin-bottom:12px"></div>
+        <div class="teacher-table-wrap">
+          <table id="results-table">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Speaker / Section</th>
+                <th>Question</th>
+                <th>Your answer</th>
+                <th>Correct answer</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card card-pad hidden" id="saved-groups-panel">
+        <h3 style="margin:0 0 12px;color:#67e8f9">Saved Group Submissions</h3>
+        <div class="teacher-table-wrap">
+          <table id="saved-groups-table">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Group name</th>
+                <th>Class</th>
+                <th>Submitted at</th>
+                <th>Correct</th>
+                <th>Incorrect</th>
+                <th>Total responses</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
     </section>
   </section>
 
@@ -654,6 +736,7 @@ The clinical pharmacist counseled his daughters on safe medication administratio
 
 <script>
 const stats = { total: 0, correct: 0, wrong: 0 };
+const responseLog = [];
 
 const state = {
   stageCompleted: new Set(),
@@ -673,7 +756,7 @@ const dialogues = {
     question: "The caregiver discussion becomes available after the physician–pharmacist discussion is completed.",
     options: [
       {
-        text: "OK. I will speak with the physician first.",
+        text: "Understood. I will speak with the physician first.",
         correct: true,
         endResponse: true,
         feedback: "Good. Begin with the acute clinical review before caregiver counseling."
@@ -954,7 +1037,7 @@ const dialogues = {
     role: "Daughter / Caregiver",
     avatar: "👩🏻",
     avatarBg: "linear-gradient(135deg,#c084fc,#9333ea)",
-    question: "After we changed the way we gave sertraline and started giving levothyroxine on an empty stomach, his MMSE score improved from 22 to 26 (after about 6 months). Why did his thinking seem to get a little better?",
+    question: "After we changed the way we gave sertraline and started giving levothyroxine on an empty stomach, his MMSE score improved from 22 to 26. Why did his thinking seem to get a little better?",
     options: [
       {
         text: "The placebo effect of the new administration routine.",
@@ -1079,7 +1162,7 @@ const extensionQuestions = [
       { text: "Cognitive decline", correct: true },
       { text: "Fever", correct: false }
     ],
-    feedback: "Correct. Undertreated hypothyroidism (hint: free T4 decreseased, TSH increased) may worsen fatigue, apathy, and cognitive impairment."
+    feedback: "Correct. Undertreated hypothyroidism may worsen fatigue, apathy, and cognitive impairment."
   },
   {
     question: "Which class of medications should be avoided or minimized in elderly patients with dysphagia because they are independent risk factors for aspiration pneumonia?",
@@ -1171,6 +1254,57 @@ function shuffleArray(array) {
   return arr;
 }
 
+function getTeamInfo() {
+  const groupName = document.getElementById("group-name")?.value.trim() || "";
+  const className = document.getElementById("class-name")?.value.trim() || "";
+  return { groupName, className };
+}
+
+function ensureTeamInfo() {
+  const { groupName, className } = getTeamInfo();
+  if (!groupName || !className) {
+    alert("Please enter Group name and Class before starting.");
+    return false;
+  }
+  return true;
+}
+
+function saveTeamInfo() {
+  const { groupName, className } = getTeamInfo();
+  const status = document.getElementById("team-status");
+
+  if (!groupName || !className) {
+    status.textContent = "Please enter both Group name and Class.";
+    status.style.color = "#fca5a5";
+    return;
+  }
+
+  localStorage.setItem("current_team_info", JSON.stringify({ groupName, className }));
+  status.textContent = `Saved: ${groupName} / ${className}`;
+  status.style.color = "#86efac";
+}
+
+function preloadTeamInfo() {
+  const saved = JSON.parse(localStorage.getItem("current_team_info") || "null");
+  if (!saved) return;
+  document.getElementById("group-name").value = saved.groupName || "";
+  document.getElementById("class-name").value = saved.className || "";
+  const status = document.getElementById("team-status");
+  status.textContent = `Loaded: ${saved.groupName} / ${saved.className}`;
+  status.style.color = "#86efac";
+}
+
+function logResponse(section, question, selectedAnswer, correctAnswer, isCorrect) {
+  responseLog.push({
+    section,
+    question,
+    selectedAnswer,
+    correctAnswer,
+    result: isCorrect ? "Correct" : "Incorrect",
+    timestamp: new Date().toISOString()
+  });
+}
+
 function canOpenCaregiver() {
   return state.stageCompleted.has("scene1_dentist_complete");
 }
@@ -1248,6 +1382,17 @@ function startDialogue(key) {
 
 function selectDialogueOption(opt, key) {
   stats.total += 1;
+
+  const dialogue = dialogues[key];
+  const correctOption = dialogue.options.find(o => o.correct);
+
+  logResponse(
+    dialogue.role,
+    dialogue.question,
+    opt.text,
+    correctOption ? correctOption.text : "",
+    !!opt.correct
+  );
 
   const fb = document.getElementById("feedback-box");
   const title = document.getElementById("feedback-title");
@@ -1341,6 +1486,16 @@ function renderExtensionQuestion() {
 function submitExtensionAnswer(index) {
   const q = extensionQuestions[extensionState.current];
   const correct = q.options[index].correct;
+  const selectedText = q.options[index].text;
+  const correctOption = q.options.find(o => o.correct);
+
+  logResponse(
+    "Extended Question",
+    q.question,
+    selectedText,
+    correctOption ? correctOption.text : "",
+    correct
+  );
 
   stats.total += 1;
   if (correct) stats.correct += 1;
@@ -1373,8 +1528,70 @@ function nextExtensionQuestion() {
   renderExtensionQuestion();
 }
 
+function renderDetailedResults() {
+  const panel = document.getElementById("results-panel");
+  const tbody = document.querySelector("#results-table tbody");
+  const summary = document.getElementById("results-summary");
+
+  tbody.innerHTML = "";
+
+  responseLog.forEach((row, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>${row.section}</td>
+      <td>${row.question}</td>
+      <td>${row.selectedAnswer}</td>
+      <td>${row.correctAnswer}</td>
+      <td style="color:${row.result === "Correct" ? "#86efac" : "#fca5a5"};font-weight:600">${row.result}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const incorrectCount = responseLog.filter(r => r.result === "Incorrect").length;
+
+  summary.innerHTML = `
+    Total responses: <strong>${responseLog.length}</strong><br>
+    Correct: <strong style="color:#86efac">${responseLog.length - incorrectCount}</strong><br>
+    Incorrect: <strong style="color:#fca5a5">${incorrectCount}</strong>
+  `;
+
+  panel.classList.remove("hidden");
+}
+
+function saveGroupSubmission() {
+  const { groupName, className } = getTeamInfo();
+  if (!groupName || !className) return;
+
+  const key = "pharmacy_simulator_submissions";
+  const existing = JSON.parse(localStorage.getItem(key) || "[]");
+
+  const submission = {
+    groupName,
+    className,
+    submittedAt: new Date().toISOString(),
+    totalResponses: responseLog.length,
+    correct: responseLog.filter(r => r.result === "Correct").length,
+    incorrect: responseLog.filter(r => r.result === "Incorrect").length,
+    responses: [...responseLog]
+  };
+
+  const index = existing.findIndex(
+    x => x.groupName === groupName && x.className === className
+  );
+
+  if (index >= 0) {
+    existing[index] = submission;
+  } else {
+    existing.push(submission);
+  }
+
+  localStorage.setItem(key, JSON.stringify(existing));
+}
+
 function completeExtension() {
   state.extensionCompleted = true;
+  saveGroupSubmission();
   showCompletion();
 }
 
@@ -1415,10 +1632,14 @@ function showCompletion() {
       </div>
     </div>
   `;
+
+  renderDetailedResults();
   updateStats();
 }
 
 function resetApp() {
+  responseLog.length = 0;
+
   stats.total = 0;
   stats.correct = 0;
   stats.wrong = 0;
@@ -1433,6 +1654,7 @@ function resetApp() {
   document.getElementById("scene2-panel").classList.add("hidden");
   document.getElementById("quiz-box").classList.add("hidden");
   document.getElementById("extension-panel").classList.add("hidden");
+  document.getElementById("results-panel").classList.add("hidden");
 
   updateStats();
 }
@@ -1482,6 +1704,16 @@ function renderQuizQuestion() {
 function submitQuizSingle(index) {
   const q = quizState.questions[quizState.current];
   const correct = q.options[index].correct;
+  const selectedText = q.options[index].text;
+  const correctOption = q.options.find(o => o.correct);
+
+  logResponse(
+    "Quiz",
+    q.question,
+    selectedText,
+    correctOption ? correctOption.text : "",
+    correct
+  );
 
   stats.total += 1;
   if (correct) stats.correct += 1;
@@ -1502,6 +1734,17 @@ function submitQuizMulti() {
 
   const correctIdx = q.options.map((o, i) => o.correct ? i : null).filter(v => v !== null);
   const correct = checked.length === correctIdx.length && checked.every(i => correctIdx.includes(i));
+
+  const selectedTexts = checked.map(i => q.options[i].text).join(" | ");
+  const correctTexts = q.options.filter(o => o.correct).map(o => o.text).join(" | ");
+
+  logResponse(
+    "Quiz",
+    q.question,
+    selectedTexts,
+    correctTexts,
+    correct
+  );
 
   stats.total += 1;
   if (correct) stats.correct += 1;
@@ -1555,6 +1798,95 @@ function finishQuiz() {
   updateStats();
 }
 
+function exportTeacherCSV() {
+  const key = "pharmacy_simulator_submissions";
+  const data = JSON.parse(localStorage.getItem(key) || "[]");
+
+  if (!data.length) {
+    alert("No saved submissions found.");
+    return;
+  }
+
+  const rows = [[
+    "Group name",
+    "Class",
+    "Submitted at",
+    "Section",
+    "Question",
+    "Selected answer",
+    "Correct answer",
+    "Result"
+  ]];
+
+  data.forEach(sub => {
+    sub.responses.forEach(r => {
+      rows.push([
+        sub.groupName,
+        sub.className,
+        sub.submittedAt,
+        r.section,
+        r.question,
+        r.selectedAnswer,
+        r.correctAnswer,
+        r.result
+      ]);
+    });
+  });
+
+  const csv = rows.map(row =>
+    row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")
+  ).join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "teacher_submissions.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderSavedGroupsTable(data) {
+  const panel = document.getElementById("saved-groups-panel");
+  const tbody = document.querySelector("#saved-groups-table tbody");
+  tbody.innerHTML = "";
+
+  data.forEach((d, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${d.groupName}</td>
+      <td>${d.className}</td>
+      <td>${new Date(d.submittedAt).toLocaleString()}</td>
+      <td>${d.correct}</td>
+      <td>${d.incorrect}</td>
+      <td>${d.totalResponses}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  panel.classList.remove("hidden");
+}
+
+function showSavedGroups() {
+  const key = "pharmacy_simulator_submissions";
+  const data = JSON.parse(localStorage.getItem(key) || "[]");
+
+  if (!data.length) {
+    alert("No saved groups yet.");
+    return;
+  }
+
+  renderSavedGroupsTable(data);
+}
+
+function clearAllSavedSubmissions() {
+  if (!confirm("Delete all saved submissions?")) return;
+  localStorage.removeItem("pharmacy_simulator_submissions");
+  document.getElementById("saved-groups-panel").classList.add("hidden");
+  alert("All saved submissions deleted.");
+}
+
 // expose for inline handlers
 window.startDialogue = startDialogue;
 window.submitExtensionAnswer = submitExtensionAnswer;
@@ -1567,17 +1899,34 @@ window.nextQuizQuestion = nextQuizQuestion;
 window.finishQuiz = finishQuiz;
 window.hideAllInteractive = hideAllInteractive;
 window.resetApp = resetApp;
+window.saveTeamInfo = saveTeamInfo;
+window.exportTeacherCSV = exportTeacherCSV;
+window.showSavedGroups = showSavedGroups;
+window.clearAllSavedSubmissions = clearAllSavedSubmissions;
 
 // button bindings
-document.getElementById("physician-char").addEventListener("click", () => startDialogue("doctor"));
+document.getElementById("physician-char").addEventListener("click", () => {
+  if (!ensureTeamInfo()) return;
+  startDialogue("doctor");
+});
+
 document.getElementById("caregiver-char").addEventListener("click", () => {
+  if (!ensureTeamInfo()) return;
   startDialogue(canOpenCaregiver() ? currentCaregiverKey() : "patient_locked");
 });
-document.getElementById("quiz-btn").addEventListener("click", startQuizMode);
-document.getElementById("scene2-start-btn").addEventListener("click", startScene2);
 
+document.getElementById("quiz-btn").addEventListener("click", () => {
+  if (!ensureTeamInfo()) return;
+  startQuizMode();
+});
+
+document.getElementById("scene2-start-btn").addEventListener("click", () => {
+  if (!ensureTeamInfo()) return;
+  startScene2();
+});
+
+preloadTeamInfo();
 updateStats();
 </script>
 </body>
-
 </html>
