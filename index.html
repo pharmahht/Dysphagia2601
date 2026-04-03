@@ -486,10 +486,10 @@
   <div class="login-modal">
     <h2>Enter Group Information</h2>
     <p>Please enter Group Name and Class before accessing the case. Each group can only view and export its own results.</p>
-    <label for="login-group-name">Group name</label>
-    <input id="login-group-name" type="text" placeholder="Enter group name">
     <label for="login-class-name">Class</label>
     <input id="login-class-name" type="text" placeholder="Enter class">
+    <label for="login-group-name">Group name</label>
+    <input id="login-group-name" type="text" placeholder="Enter group name">
     <div class="login-error" id="login-error"></div>
     <button class="btn" type="button" onclick="submitLogin()">Enter Case</button>
   </div>
@@ -1945,24 +1945,22 @@ function exportCurrentUserCSV() {
   const rows = [[
     "Group name",
     "Class",
-    "Section",
+    "Submitted time",
     "Question",
     "Selected answer",
     "Correct answer",
-    "Result",
-    "Timestamp"
+    "Result"
   ]];
 
   responseLog.forEach(r => {
     rows.push([
       currentUser.groupName,
       currentUser.className,
-      r.section,
+      new Date(r.timestamp).toLocaleString(), // đổi từ Timestamp → Submitted time
       r.question,
       r.selectedAnswer,
       r.correctAnswer,
-      r.result,
-      r.timestamp
+      r.result
     ]);
   });
 
@@ -1978,7 +1976,6 @@ function exportCurrentUserCSV() {
   a.click();
   URL.revokeObjectURL(url);
 }
-
 
 
 // expose for inline handlers
