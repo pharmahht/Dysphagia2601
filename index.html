@@ -414,6 +414,65 @@
       margin-top:12px;
     }
 
+    .login-overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(2,6,23,.82);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      padding:20px;
+    }
+    .login-modal{
+      width:min(440px,100%);
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:20px;
+      box-shadow:var(--shadow);
+      padding:22px;
+    }
+    .login-modal h2{
+      margin:0 0 8px;
+      color:#67e8f9;
+      font-size:22px;
+    }
+    .login-modal p{
+      margin:0 0 14px;
+      color:#cbd5e1;
+      line-height:1.6;
+      font-size:14px;
+    }
+    .login-modal label{
+      display:block;
+      margin:0 0 6px;
+      font-size:13px;
+      color:var(--muted);
+    }
+    .login-modal input{
+      width:100%;
+      padding:11px 12px;
+      border-radius:10px;
+      border:1px solid #475569;
+      background:#0f172a;
+      color:#e5eefb;
+      margin-bottom:12px;
+    }
+    .login-error{
+      min-height:18px;
+      color:#fca5a5;
+      font-size:13px;
+      margin:2px 0 10px;
+    }
+    .current-user-box{
+      background:rgba(51,65,85,.45);
+      border-radius:14px;
+      padding:12px;
+      margin-top:12px;
+      line-height:1.6;
+      font-size:14px;
+    }
+
     @media (max-width:1080px){
       .main{grid-template-columns:1fr}
       .right-col{position:static}
@@ -423,6 +482,19 @@
   </style>
 </head>
 <body>
+<div class="login-overlay" id="login-overlay">
+  <div class="login-modal">
+    <h2>Enter Group Information</h2>
+    <p>Please enter Group Name and Class before accessing the case. Each group can only view and export its own results.</p>
+    <label for="login-group-name">Group name</label>
+    <input id="login-group-name" type="text" placeholder="Enter group name">
+    <label for="login-class-name">Class</label>
+    <input id="login-class-name" type="text" placeholder="Enter class">
+    <div class="login-error" id="login-error"></div>
+    <button class="btn" type="button" onclick="submitLogin()">Enter Case</button>
+  </div>
+</div>
+
 <div class="page">
   <header class="header">
     <div class="header-top">
@@ -448,22 +520,15 @@
     </div>
 
     <div class="card card-pad" style="margin-top:16px">
-      <h3 style="margin:0 0 12px;color:#67e8f9">Team Information</h3>
-      <div class="team-grid">
-        <div>
-          <label for="group-name" class="small" style="display:block;margin-bottom:6px">Group name</label>
-          <input id="group-name" type="text" placeholder="Enter group name">
-        </div>
-        <div>
-          <label for="class-name" class="small" style="display:block;margin-bottom:6px">Class</label>
-          <input id="class-name" type="text" placeholder="Enter class">
-        </div>
+      <h3 style="margin:0 0 12px;color:#67e8f9">Current User</h3>
+      <div class="current-user-box" id="current-user-box">
+        <div><span class="k">Group name:</span> <span id="current-group-name">-</span></div>
+        <div><span class="k">Class:</span> <span id="current-class-name">-</span></div>
       </div>
       <div class="toolbar">
-        <button class="btn" type="button" onclick="saveTeamInfo()">Save Team Info</button>
-        <button class="btn" type="button" onclick="exportTeacherCSV()">Export Teacher CSV</button>
-        <button class="btn" type="button" onclick="showSavedGroups()">Show Saved Groups</button>
-        <button class="btn" type="button" onclick="clearAllSavedSubmissions()">Clear Saved Data</button>
+        <button class="btn" type="button" onclick="exportCurrentUserCSV()">Export My Results</button>
+        <button class="btn" type="button" onclick="switchUser()">Switch User</button>
+        <button class="btn" type="button" onclick="clearCurrentUserData()">Clear My Data</button>
       </div>
       <div id="team-status" class="small" style="margin-top:10px"></div>
     </div>
@@ -699,26 +764,6 @@ The clinical pharmacist counseled his daughters on safe medication administratio
           </table>
         </div>
       </div>
-
-      <div class="card card-pad hidden" id="saved-groups-panel">
-        <h3 style="margin:0 0 12px;color:#67e8f9">Saved Group Submissions</h3>
-        <div class="teacher-table-wrap">
-          <table id="saved-groups-table">
-            <thead>
-              <tr>
-                <th>No.</th>
-                <th>Group name</th>
-                <th>Class</th>
-                <th>Submitted at</th>
-                <th>Correct</th>
-                <th>Incorrect</th>
-                <th>Total responses</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
     </section>
   </section>
 
@@ -735,8 +780,11 @@ The clinical pharmacist counseled his daughters on safe medication administratio
 </div>
 
 <script>
+const STORAGE_PREFIX = "pharmacy_simulator_user_";
+const CURRENT_USER_KEY = "pharmacy_simulator_current_user";
 const stats = { total: 0, correct: 0, wrong: 0 };
 const responseLog = [];
+let currentUser = null;
 
 const state = {
   stageCompleted: new Set(),
@@ -1254,44 +1302,141 @@ function shuffleArray(array) {
   return arr;
 }
 
-function getTeamInfo() {
-  const groupName = document.getElementById("group-name")?.value.trim() || "";
-  const className = document.getElementById("class-name")?.value.trim() || "";
-  return { groupName, className };
+function makeUserStorageKey(groupName, className) {
+  return STORAGE_PREFIX + `${groupName}___${className}`.toLowerCase().replace(/\s+/g, "_");
+}
+
+function getCurrentUserStorageKey() {
+  if (!currentUser) return null;
+  return makeUserStorageKey(currentUser.groupName, currentUser.className);
+}
+
+function syncCurrentUserBox() {
+  document.getElementById("current-group-name").textContent = currentUser?.groupName || "-";
+  document.getElementById("current-class-name").textContent = currentUser?.className || "-";
+}
+
+function saveCurrentUserState() {
+  const key = getCurrentUserStorageKey();
+  if (!key) return;
+
+  const payload = {
+    groupName: currentUser.groupName,
+    className: currentUser.className,
+    stats: { ...stats },
+    responseLog: [...responseLog],
+    state: {
+      stageCompleted: [...state.stageCompleted],
+      scene2Unlocked: state.scene2Unlocked,
+      extensionUnlocked: state.extensionUnlocked,
+      extensionCompleted: state.extensionCompleted
+    },
+    extensionState: { current: extensionState.current }
+  };
+
+  localStorage.setItem(key, JSON.stringify(payload));
+}
+
+function loadCurrentUserState() {
+  const key = getCurrentUserStorageKey();
+  if (!key) return;
+
+  const saved = JSON.parse(localStorage.getItem(key) || "null");
+
+  responseLog.length = 0;
+  stats.total = 0;
+  stats.correct = 0;
+  stats.wrong = 0;
+  state.stageCompleted = new Set();
+  state.scene2Unlocked = false;
+  state.extensionUnlocked = false;
+  state.extensionCompleted = false;
+  extensionState.current = 0;
+
+  if (saved) {
+    stats.total = saved.stats?.total || 0;
+    stats.correct = saved.stats?.correct || 0;
+    stats.wrong = saved.stats?.wrong || 0;
+    responseLog.push(...(saved.responseLog || []));
+    state.stageCompleted = new Set(saved.state?.stageCompleted || []);
+    state.scene2Unlocked = !!saved.state?.scene2Unlocked;
+    state.extensionUnlocked = !!saved.state?.extensionUnlocked;
+    state.extensionCompleted = !!saved.state?.extensionCompleted;
+    extensionState.current = saved.extensionState?.current || 0;
+  }
+
+  syncCurrentUserBox();
+  updateStats();
+
+  const status = document.getElementById("team-status");
+  status.textContent = currentUser
+    ? `Current user: ${currentUser.groupName} / ${currentUser.className}`
+    : "";
+  status.style.color = "#86efac";
+
+  if (state.extensionCompleted || responseLog.length) {
+    renderDetailedResults();
+  } else {
+    document.getElementById("results-panel").classList.add("hidden");
+  }
 }
 
 function ensureTeamInfo() {
-  const { groupName, className } = getTeamInfo();
-  if (!groupName || !className) {
-    alert("Please enter Group name and Class before starting.");
+  if (!currentUser?.groupName || !currentUser?.className) {
+    document.getElementById("login-overlay").classList.remove("hidden");
     return false;
   }
   return true;
 }
 
-function saveTeamInfo() {
-  const { groupName, className } = getTeamInfo();
-  const status = document.getElementById("team-status");
+function submitLogin() {
+  const groupName = document.getElementById("login-group-name").value.trim();
+  const className = document.getElementById("login-class-name").value.trim();
+  const error = document.getElementById("login-error");
 
   if (!groupName || !className) {
-    status.textContent = "Please enter both Group name and Class.";
-    status.style.color = "#fca5a5";
+    error.textContent = "Please enter both Group Name and Class.";
     return;
   }
 
-  localStorage.setItem("current_team_info", JSON.stringify({ groupName, className }));
-  status.textContent = `Saved: ${groupName} / ${className}`;
-  status.style.color = "#86efac";
+  currentUser = { groupName, className };
+  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
+  document.getElementById("login-overlay").classList.add("hidden");
+  error.textContent = "";
+  loadCurrentUserState();
 }
 
-function preloadTeamInfo() {
-  const saved = JSON.parse(localStorage.getItem("current_team_info") || "null");
-  if (!saved) return;
-  document.getElementById("group-name").value = saved.groupName || "";
-  document.getElementById("class-name").value = saved.className || "";
-  const status = document.getElementById("team-status");
-  status.textContent = `Loaded: ${saved.groupName} / ${saved.className}`;
-  status.style.color = "#86efac";
+function preloadCurrentUser() {
+  const saved = JSON.parse(localStorage.getItem(CURRENT_USER_KEY) || "null");
+  if (saved?.groupName && saved?.className) {
+    currentUser = saved;
+    document.getElementById("login-group-name").value = saved.groupName;
+    document.getElementById("login-class-name").value = saved.className;
+    document.getElementById("login-overlay").classList.add("hidden");
+    loadCurrentUserState();
+  } else {
+    document.getElementById("login-overlay").classList.remove("hidden");
+  }
+}
+
+function switchUser() {
+  localStorage.removeItem(CURRENT_USER_KEY);
+  currentUser = null;
+  syncCurrentUserBox();
+  document.getElementById("login-group-name").value = "";
+  document.getElementById("login-class-name").value = "";
+  document.getElementById("login-error").textContent = "";
+  document.getElementById("login-overlay").classList.remove("hidden");
+  resetApp(true);
+}
+
+function clearCurrentUserData() {
+  if (!currentUser) return;
+  if (!confirm("Delete all saved data for the current user?")) return;
+  localStorage.removeItem(getCurrentUserStorageKey());
+  resetApp(true);
+  document.getElementById("team-status").textContent = `Data cleared for ${currentUser.groupName} / ${currentUser.className}`;
+  document.getElementById("team-status").style.color = "#fca5a5";
 }
 
 function logResponse(section, question, selectedAnswer, correctAnswer, isCorrect) {
@@ -1303,6 +1448,7 @@ function logResponse(section, question, selectedAnswer, correctAnswer, isCorrect
     result: isCorrect ? "Correct" : "Incorrect",
     timestamp: new Date().toISOString()
   });
+  saveCurrentUserState();
 }
 
 function canOpenCaregiver() {
@@ -1330,6 +1476,7 @@ function updateStats() {
   const p = getProgressText();
   document.getElementById("stat-progress").textContent = p;
   document.getElementById("progress-text").textContent = p;
+  if (currentUser) saveCurrentUserState();
 }
 
 function hideAllInteractive() {
@@ -1551,6 +1698,8 @@ function renderDetailedResults() {
   const incorrectCount = responseLog.filter(r => r.result === "Incorrect").length;
 
   summary.innerHTML = `
+    Group name: <strong>${currentUser?.groupName || "-"}</strong><br>
+    Class: <strong>${currentUser?.className || "-"}</strong><br>
     Total responses: <strong>${responseLog.length}</strong><br>
     Correct: <strong style="color:#86efac">${responseLog.length - incorrectCount}</strong><br>
     Incorrect: <strong style="color:#fca5a5">${incorrectCount}</strong>
@@ -1560,33 +1709,8 @@ function renderDetailedResults() {
 }
 
 function saveGroupSubmission() {
-  const { groupName, className } = getTeamInfo();
-  if (!groupName || !className) return;
-
-  const key = "pharmacy_simulator_submissions";
-  const existing = JSON.parse(localStorage.getItem(key) || "[]");
-
-  const submission = {
-    groupName,
-    className,
-    submittedAt: new Date().toISOString(),
-    totalResponses: responseLog.length,
-    correct: responseLog.filter(r => r.result === "Correct").length,
-    incorrect: responseLog.filter(r => r.result === "Incorrect").length,
-    responses: [...responseLog]
-  };
-
-  const index = existing.findIndex(
-    x => x.groupName === groupName && x.className === className
-  );
-
-  if (index >= 0) {
-    existing[index] = submission;
-  } else {
-    existing.push(submission);
-  }
-
-  localStorage.setItem(key, JSON.stringify(existing));
+  if (!currentUser?.groupName || !currentUser?.className) return;
+  saveCurrentUserState();
 }
 
 function completeExtension() {
@@ -1637,7 +1761,7 @@ function showCompletion() {
   updateStats();
 }
 
-function resetApp() {
+function resetApp(preserveUser = false) {
   responseLog.length = 0;
 
   stats.total = 0;
@@ -1655,6 +1779,15 @@ function resetApp() {
   document.getElementById("quiz-box").classList.add("hidden");
   document.getElementById("extension-panel").classList.add("hidden");
   document.getElementById("results-panel").classList.add("hidden");
+
+  if (!preserveUser) {
+    currentUser = null;
+    localStorage.removeItem(CURRENT_USER_KEY);
+    syncCurrentUserBox();
+  } else {
+    saveCurrentUserState();
+    syncCurrentUserBox();
+  }
 
   updateStats();
 }
@@ -1798,39 +1931,39 @@ function finishQuiz() {
   updateStats();
 }
 
-function exportTeacherCSV() {
-  const key = "pharmacy_simulator_submissions";
-  const data = JSON.parse(localStorage.getItem(key) || "[]");
+function exportCurrentUserCSV() {
+  if (!currentUser) {
+    alert("No current user found.");
+    return;
+  }
 
-  if (!data.length) {
-    alert("No saved submissions found.");
+  if (!responseLog.length) {
+    alert("No saved results for the current user.");
     return;
   }
 
   const rows = [[
     "Group name",
     "Class",
-    "Submitted at",
     "Section",
     "Question",
     "Selected answer",
     "Correct answer",
-    "Result"
+    "Result",
+    "Timestamp"
   ]];
 
-  data.forEach(sub => {
-    sub.responses.forEach(r => {
-      rows.push([
-        sub.groupName,
-        sub.className,
-        sub.submittedAt,
-        r.section,
-        r.question,
-        r.selectedAnswer,
-        r.correctAnswer,
-        r.result
-      ]);
-    });
+  responseLog.forEach(r => {
+    rows.push([
+      currentUser.groupName,
+      currentUser.className,
+      r.section,
+      r.question,
+      r.selectedAnswer,
+      r.correctAnswer,
+      r.result,
+      r.timestamp
+    ]);
   });
 
   const csv = rows.map(row =>
@@ -1841,51 +1974,12 @@ function exportTeacherCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "teacher_submissions.csv";
+  a.download = `${currentUser.groupName}_${currentUser.className}_results.csv`.replace(/\s+/g, "_");
   a.click();
   URL.revokeObjectURL(url);
 }
 
-function renderSavedGroupsTable(data) {
-  const panel = document.getElementById("saved-groups-panel");
-  const tbody = document.querySelector("#saved-groups-table tbody");
-  tbody.innerHTML = "";
 
-  data.forEach((d, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${d.groupName}</td>
-      <td>${d.className}</td>
-      <td>${new Date(d.submittedAt).toLocaleString()}</td>
-      <td>${d.correct}</td>
-      <td>${d.incorrect}</td>
-      <td>${d.totalResponses}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  panel.classList.remove("hidden");
-}
-
-function showSavedGroups() {
-  const key = "pharmacy_simulator_submissions";
-  const data = JSON.parse(localStorage.getItem(key) || "[]");
-
-  if (!data.length) {
-    alert("No saved groups yet.");
-    return;
-  }
-
-  renderSavedGroupsTable(data);
-}
-
-function clearAllSavedSubmissions() {
-  if (!confirm("Delete all saved submissions?")) return;
-  localStorage.removeItem("pharmacy_simulator_submissions");
-  document.getElementById("saved-groups-panel").classList.add("hidden");
-  alert("All saved submissions deleted.");
-}
 
 // expose for inline handlers
 window.startDialogue = startDialogue;
@@ -1899,10 +1993,10 @@ window.nextQuizQuestion = nextQuizQuestion;
 window.finishQuiz = finishQuiz;
 window.hideAllInteractive = hideAllInteractive;
 window.resetApp = resetApp;
-window.saveTeamInfo = saveTeamInfo;
-window.exportTeacherCSV = exportTeacherCSV;
-window.showSavedGroups = showSavedGroups;
-window.clearAllSavedSubmissions = clearAllSavedSubmissions;
+window.submitLogin = submitLogin;
+window.exportCurrentUserCSV = exportCurrentUserCSV;
+window.switchUser = switchUser;
+window.clearCurrentUserData = clearCurrentUserData;
 
 // button bindings
 document.getElementById("physician-char").addEventListener("click", () => {
@@ -1925,7 +2019,7 @@ document.getElementById("scene2-start-btn").addEventListener("click", () => {
   startScene2();
 });
 
-preloadTeamInfo();
+preloadCurrentUser();
 updateStats();
 </script>
 </body>
