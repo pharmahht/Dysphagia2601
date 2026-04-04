@@ -1739,6 +1739,16 @@ function showCompletion() {
         <div>✓ Levothyroxine should be given fasting; correcting administration can improve reversible contributors to cognitive impairment.</div>
         <div>✓ Silent aspiration, reflux, and poor oral hygiene all contribute to recurrence risk.</div>
         <div>✓ Deprescribing inappropriate PPIs and being cautious with chlorhexidine can also be relevant preventive strategies.</div>
+          <div style="margin-top:16px;text-align:center">
+        <button class="btn" type="button" onclick="exportCurrentUserCSV()">
+        Export Your Team Result
+    </button>
+  </div>
+
+  <!-- NEW: review instruction -->
+  <div style="margin-top:12px;text-align:center;font-weight:600;color:#5eead4">
+    Review Final Result Below ⬇️
+  </div>
       </div>
 
       <section class="references" style="margin-top:16px;text-align:left">
@@ -1943,8 +1953,8 @@ function exportCurrentUserCSV() {
   }
 
   const rows = [[
-    "Group name",
     "Class",
+    "Group",
     "Submitted time",
     "Question",
     "Selected answer",
@@ -1954,8 +1964,8 @@ function exportCurrentUserCSV() {
 
   responseLog.forEach(r => {
     rows.push([
-      currentUser.groupName,
       currentUser.className,
+      currentUser.groupName,
       new Date(r.timestamp).toLocaleString(), // đổi từ Timestamp → Submitted time
       r.question,
       r.selectedAnswer,
